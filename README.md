@@ -1,15 +1,15 @@
-# ReelLoop Studio 4.1 Alpha
+# ReelLoop Studio 4.3 Alpha
 
-Erste funktionale Ausbauversion der mobilen Video-Loopstation.
+## Neu
 
-## Neu in 4.1
-- frei wählbare Spuranzahl von 1 bis 6
-- Vorschau und Timeline passen sich automatisch an
-- ein Takt Einzähler vor jeder Aufnahme
-- Aufnahme endet automatisch nach der gewählten Loop-Länge
-- Projekt-Einstellungen werden lokal gespeichert
-- Mute/Solo-Darstellung verbessert
-- Android-Aufnahme robuster konfiguriert
+- Tonwiedergabe der aufgenommenen Videospuren aktiviert
+- Mute und Solo steuern nun den tatsächlichen Ton, ohne das Videobild anzuhalten
+- Lautstärke jeder Spur direkt im Videofenster per Wischgeste einstellbar
+- Nach oben wischen: lauter
+- Nach unten wischen: leiser
+- Lautstärkeanzeige in Prozent
+- Lautstärken werden lokal gespeichert
 
-## Test
-Die Dateien direkt in den Hauptordner des GitHub-Repositories laden und committen. Netlify veröffentlicht anschließend automatisch.
+## Testhinweis
+
+Auf **PLAY** tippen. Beim ersten Start kann Android/Chrome eine Benutzerinteraktion benötigen, bevor Ton abgespielt wird. Das Antippen von PLAY erfüllt diese Vorgabe.
