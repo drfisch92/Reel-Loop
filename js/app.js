@@ -78,15 +78,29 @@ function stopRecording(manual){if(state.recorder?.state==='recording'){clearTime
 function syncVideo(v,i,hard=false){
  if(!state.playing||!state.tracks[i].url)return;
  const desired=((performance.now()-state.start)/1000)%loopLength();
- if(hard||Math.abs((v.currentTime||0)-desired)>.40){try{v.currentTime=desired}catch{}}
+ const current=v.currentTime||0,delta=desired-current;
+ if(hard||Math.abs(delta)>.28){try{v.currentTime=desired}catch{};v.playbackRate=1}
+ else v.playbackRate=Math.max(.985,Math.min(1.015,1+delta*.025));
  v.muted=!audible(i);v.volume=Math.max(0,Math.min(1,state.tracks[i].volume??1));if(v.paused)v.play().catch(()=>{})
 }
 async function play(){
  if(!activeTracks().some(t=>t.url))return toast('Noch keine Spur aufgenommen');
  await unlockAudio();
- stop(false);state.playing=true;state.start=performance.now()+120;status('WIEDERGABE','playing');
- document.querySelectorAll('.cell video').forEach((v,i)=>{if(state.tracks[i].url){try{v.currentTime=0}catch{};v.pause()}});
- if(state.metro)startMetronome();state.playSyncTimer=setInterval(()=>document.querySelectorAll('.cell video').forEach((v,i)=>syncVideo(v,i)),1000);animate()
+ stop(false);status('WIEDERGABE','playing');
+ const videos=[...document.querySelectorAll('.cell video')].filter((v,i)=>state.tracks[i]?.url);
+ videos.forEach(v=>{v.pause();v.playbackRate=1;try{v.currentTime=0}catch{}});
+ await Promise.all(videos.map(v=>new Promise(resolve=>{
+   if(v.readyState>=2)return resolve();
+   const done=()=>{v.removeEventListener('canplay',done);resolve()};
+   v.addEventListener('canplay',done,{once:true});setTimeout(done,900)
+ })));
+ state.playing=true;
+ await Promise.all(videos.map(v=>v.play().catch(()=>{})));
+ state.start=performance.now();
+ videos.forEach((v,i)=>syncVideo(v,i,true));
+ if(state.metro)startMetronome();
+ state.playSyncTimer=setInterval(()=>document.querySelectorAll('.cell video').forEach((v,i)=>syncVideo(v,i)),350);
+ animate()
 }
 function stop(reset=true){
  state.playing=false;clearInterval(state.playSyncTimer);cancelAnimationFrame(state.animationId);

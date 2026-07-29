@@ -3,7 +3,7 @@ export const state={
   tracks:Array.from({length:MAX_TRACKS},(_,i)=>({name:`Spur ${i+1}`,blob:null,url:null,mute:false,solo:false,duration:0,volume:1})),
   trackCount:6,selected:0,layout:'raster',stream:null,recorder:null,chunks:[],recording:false,
   pendingRecord:false,playing:false,metro:false,start:0,timer:null,audio:null,animationId:null,
-  recordStopTimer:null,playSyncTimer:null,metroNext:0,metroBeat:0
+  recordStopTimer:null,playSyncTimer:null,metroNext:0,metroBeat:0,metroGeneration:0,metroNodes:new Set()
 };
 export const $=id=>document.getElementById(id);
 export const activeTracks=()=>state.tracks.slice(0,state.trackCount);
