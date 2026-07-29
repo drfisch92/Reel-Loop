@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#050608">
+<meta name="mobile-web-app-capable" content="yes">
+<title>ReelLoop Studio v0.4</title>
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+:root{
+  --bg:#050608;--panel:#101216;--panel2:#171a20;--line:#2b3039;
+  --text:#f4f5f7;--muted:#9299a5;--accent:#7258ff;--red:#ff4b5f;
+  --green:#35d17e;--blue:#348cff;--amber:#f4b327;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);
+font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+body{padding-bottom:126px}
+button,input,select{font:inherit}
+button{touch-action:manipulation}
+.app{max-width:1180px;margin:auto;padding:10px}
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:4px 2px 10px}
+.topbar h1{font-size:18px;margin:0}.version{font-size:11px;color:var(--muted)}
+.options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) 122px;gap:7px;margin-bottom:10px}
+.option,.metro{
+  min-height:68px;border:1px solid var(--line);border-radius:12px;background:var(--panel);
+  color:white;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px
+}
+.option.active{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.option .icon{font-size:22px;line-height:1}.option span{font-size:11px}
+.metro{position:relative;user-select:none;-webkit-user-select:none;touch-action:none;padding:6px}
+.metro.off{opacity:.52}.metro-icon{font-size:24px}.metro-title{font-size:10px;font-weight:800}
+.metro-value{font-size:11px;color:#b7aaff}.metro-flash{position:absolute;inset:0;border-radius:12px;pointer-events:none}
+.metro-flash.on{box-shadow:inset 0 0 0 2px var(--accent),0 0 16px rgba(114,88,255,.35)}
+.workspace{display:grid;grid-template-columns:minmax(310px,430px) minmax(0,1fr);gap:10px;align-items:start}
+.preview-card,.timeline-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.preview-head,.timeline-head{padding:9px 11px;border-bottom:1px solid var(--line);
+font-size:12px;font-weight:800;display:flex;justify-content:space-between}
+.preview-shell{padding:10px;display:flex;justify-content:center;background:#07080a}
+#stage{width:min(100%,390px);aspect-ratio:9/16;position:relative;background:#000;overflow:hidden;border-radius:9px}
+.layer{position:absolute;overflow:hidden;background:#070707;border:1px solid rgba(255,255,255,.09)}
+.layer video{width:100%;height:100%;object-fit:cover;display:block}
+.layer.selected{outline:2px solid var(--accent);z-index:20}
+.empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:#4d535e;font-weight:800;font-size:12px}
+.tag{position:absolute;left:5px;top:5px;background:rgba(0,0,0,.7);font-size:9px;padding:3px 5px;border-radius:5px}
+.statusbar{padding:8px 10px;border-top:1px solid var(--line);color:var(--muted);font-size:11px;
+display:flex;justify-content:space-between}.statusbar strong{color:white}
+.timeline-scroll{overflow-x:auto}
+.timeline-grid{min-width:690px}
+.ruler{display:grid;grid-template-columns:220px repeat(4,1fr);border-bottom:1px solid var(--line)}
+.ruler div{padding:8px;border-right:1px solid var(--line);font-size:10px;color:var(--muted)}
+.track{display:grid;grid-template-columns:220px 1fr;min-height:68px;border-bottom:1px solid var(--line)}
+.track:last-child{border-bottom:0}
+.controls{display:grid;grid-template-columns:47px repeat(5,31px);gap:5px;align-items:center;padding:7px;border-right:1px solid var(--line)}
+.name{font-size:11px;font-weight:900}
+.tbtn{height:36px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:white;font-size:11px;font-weight:900;padding:0}
+.tbtn.rec{color:var(--red)}.tbtn.rec.armed{animation:pulse .75s infinite}.tbtn.rec.recording{background:var(--red);color:white}
+.tbtn.on{border-color:var(--amber);color:var(--amber)}.tbtn.playing{border-color:var(--green);color:var(--green)}
+@keyframes pulse{50%{opacity:.35}}
+.lane{position:relative;background:#0a0c10}
+.bargrid{position:absolute;inset:0;display:grid;grid-template-columns:repeat(4,1fr)}
+.bargrid i{border-right:1px dashed #343945}
+.clip{display:none;position:absolute;left:5px;right:5px;top:9px;bottom:9px;border-radius:8px;
+background:linear-gradient(90deg,#6539d8,#227fca);overflow:hidden}
+.clip.show{display:block}
+.wave{position:absolute;inset:0;opacity:.78;background:
+repeating-linear-gradient(90deg,rgba(255,255,255,.36) 0 2px,transparent 2px 5px)}
+.playhead{position:absolute;top:0;bottom:0;left:0;width:2px;background:white;z-index:5}
+.footer{position:fixed;left:0;right:0;bottom:0;background:rgba(5,6,8,.97);backdrop-filter:blur(12px);
+border-top:1px solid var(--line);padding:8px 10px max(8px,env(safe-area-inset-bottom));z-index:50}
+.footer-main,.footer-sub{max-width:1180px;margin:auto;display:grid;gap:7px}
+.footer-main{grid-template-columns:1.05fr 1fr 1.15fr}
+.footer-sub{grid-template-columns:1fr 1fr 48px;margin-top:7px}
+.footer button,.footer input,.footer select{min-height:45px;border:1px solid var(--line);border-radius:10px;
+background:var(--panel2);color:white;font-weight:800}
+.footer .loop{background:#0e4827;border-color:#1c7d47}
+.footer .save{background:#17345e;border-color:#275897}
+.footer input{text-align:center;width:100%}
+.toast{display:none;position:fixed;left:50%;bottom:132px;transform:translateX(-50%);
+background:#262a33;padding:9px 13px;border-radius:9px;z-index:100;font-size:12px;white-space:nowrap}
+@media(max-width:760px){
+  .options{grid-template-columns:repeat(4,1fr);}.metro{grid-column:1/-1;min-height:54px;flex-direction:row;gap:10px}
+  .workspace{grid-template-columns:1fr}.preview-card{position:relative}
+  #stage{width:min(82vw,390px)}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar"><h1>ReelLoop Studio</h1><span class="version">Testversion 0.4</span></div>
+
+  <section class="options">
+    <button class="option active" data-layout="grid"><span class="icon">▦</span><span>Raster</span></button>
+    <button class="option" data-layout="full"><span class="icon">□</span><span>Vollbild</span></button>
+    <button class="option" data-layout="pip"><span class="icon">▣</span><span>Bild-in-Bild</span></button>
+    <button class="option" data-layout="side"><span class="icon">▥</span><span>Nebeneinander</span></button>
+
+    <button id="metro" class="metro" aria-label="Metronom">
+      <span class="metro-icon">♩</span>
+      <span class="metro-title">METRONOM</span>
+      <span id="metroValue" class="metro-value">90 BPM · 35%</span>
+      <span id="metroFlash" class="metro-flash"></span>
+    </button>
+  </section>
+
+  <section class="workspace">
+    <article class="preview-card">
+      <div class="preview-head"><span>9:16 Video</span><span id="layoutName">Raster</span></div>
+      <div class="preview-shell"><div id="stage"></div></div>
+      <div class="statusbar"><span id="status">Spur 1 bereit</span><strong id="clock">BEREIT</strong></div>
+    </article>
+
+    <article class="timeline-card">
+      <div class="timeline-head"><span>4-Takt-Timeline</span><span id="tempoLabel">4/4 · 90 BPM</span></div>
+      <div class="timeline-scroll">
+        <div class="timeline-grid">
+          <div class="ruler"><div>Spuren</div><div>Takt 1</div><div>Takt 2</div><div>Takt 3</div><div>Takt 4</div></div>
+          <div id="tracks"></div>
+        </div>
+      </div>
+    </article>
+  </section>
+</div>
+
+<footer class="footer">
+  <div class="footer-main">
+    <button id="loopAll" class="loop">▶ LOOPEN</button>
+    <button id="stopAll">■ STOP</button>
+    <button id="saveAll" class="save">▣ SPEICHERN</button>
+  </div>
+  <div class="footer-sub">
+    <select id="meter"><option value="4">4/4</option><option value="3">3/4</option><option value="2">2/4</option><option value="6">6/8</option></select>
+    <input id="bpm" type="number" value="90" min="40" max="240" inputmode="numeric">
+    <button id="settings">⚙</button>
+  </div>
+</footer>
+<div id="toast" class="toast"></div>
+
+<script>
+(()=>{
+const N=4,BARS=4;
+const state={
+ selected:0,layout:"grid",metroOn:true,metroVolume:.35,
+ recordings:Array(N).fill(null),muted:Array(N).fill(false),solo:Array(N).fill(false),
+ stream:null,recorder:null,audio:null,timer:null,db:null,armed:null
+};
+const $=id=>document.getElementById(id);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const beatMs=()=>60000/Math.max(40,Math.min(240,+$("bpm").value||90));
+const beatsPerBar=()=>+$("meter").value||4;
+const loopDuration=()=>beatMs()*beatsPerBar()*BARS;
+const hasAny=()=>state.recordings.some(Boolean);
+
+function build(){
+ for(let i=0;i<N;i++){
+  const layer=document.createElement("div");
+  layer.className="layer";layer.id=`layer${i}`;
+  layer.innerHTML=`<video id="video${i}" playsinline></video><div id="empty${i}" class="empty">SPUR ${i+1}<br>VIDEO</div><span class="tag">S${i+1}</span>`;
+  layer.onclick=()=>selectTrack(i);$("stage").appendChild(layer);
+
+  const tr=document.createElement("div");tr.className="track";tr.id=`track${i}`;
+  tr.innerHTML=`
+  <div class="controls">
+    <span class="name">SPUR ${i+1}</span>
+    <button class="tbtn" id="play${i}">▶</button>
+    <button class="tbtn rec" id="rec${i}">●</button>
+    <button class="tbtn" id="mute${i}">M</button>
+    <button class="tbtn" id="solo${i}">S</button>
+    <button class="tbtn" id="del${i}">⌫</button>
+  </div>
+  <div class="lane" id="lane${i}">
+    <div class="bargrid"><i></i><i></i><i></i><i></i></div>
+    <div class="clip" id="clip${i}"><div class="wave"></div></div>
+    <div class="playhead" id="head${i}"></div>
+  </div>`;
+  $("tracks").appendChild(tr);
+  $(`play${i}`).onclick=()=>playOne(i);
+  $(`rec${i}`).onclick=()=>record(i);
+  $(`mute${i}`).onclick=()=>toggleMute(i);
+  $(`solo${i}`).onclick=()=>toggleSolo(i);
+  $(`del${i}`).onclick=()=>deleteTrack(i);
+  $(`lane${i}`).onclick=()=>selectTrack(i);
+ }
+ applyLayout("grid");selectTrack(0);syncUi();
+}
+function selectTrack(i){
+ state.selected=i;
+ for(let j=0;j<N;j++){
+  $(`layer${j}`).classList.toggle("selected",j===i);
+  $(`track${j}`).style.background=j===i?"#131722":"transparent";
+ }
+ $("status").textContent=`Spur ${i+1} bereit`;
+ applyLayout(state.layout);
+}
+function applyLayout(layout){
+ state.layout=layout;
+ document.querySelectorAll(".option").forEach(b=>b.classList.toggle("active",b.dataset.layout===layout));
+ $("layoutName").textContent={grid:"Raster",full:"Vollbild",pip:"Bild-in-Bild",side:"Nebeneinander"}[layout];
+ const L=[...Array(N)].map((_,i)=>$(`layer${i}`));
+ if(layout==="grid"){
+   [[0,0,50,50],[50,0,50,50],[0,50,50,50],[50,50,50,50]].forEach((p,i)=>setBox(L[i],p));
+ } else if(layout==="side"){
+   [[0,0,50,50],[50,0,50,50],[0,50,50,50],[50,50,50,50]].forEach((p,i)=>setBox(L[i],p));
+ } else if(layout==="full"){
+   L.forEach((el,i)=>{setBox(el,[0,0,100,100]);el.style.display=i===state.selected?"block":"none"});
+ } else {
+   L.forEach(el=>el.style.display="block");
+   setBox(L[state.selected],[0,0,100,100]);
+   const others=[0,1,2,3].filter(i=>i!==state.selected);
+   others.forEach((idx,k)=>setBox(L[idx],[67,3+k*22,30,19]));
+ }
+}
+function setBox(el,[x,y,w,h]){el.style.display="block";el.style.left=x+"%";el.style.top=y+"%";el.style.width=w+"%";el.style.height=h+"%"}
+document.querySelectorAll(".option").forEach(b=>b.onclick=()=>applyLayout(b.dataset.layout));
+
+async function media(){
+ if(state.stream)return state.stream;
+ state.stream=await navigator.mediaDevices.getUserMedia({
+   video:{facingMode:"user",width:{ideal:1080},height:{ideal:1920}},
+   audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}
+ });
+ return state.stream;
+}
+function mime(){return ["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"].find(MediaRecorder.isTypeSupported)||""}
+function shouldHear(i,exclude=-1){
+ if(i===exclude||!state.recordings[i]||state.muted[i])return false;
+ const anySolo=state.solo.some(Boolean);
+ return !anySolo||state.solo[i];
+}
+function setPlaybackLevels(){
+ for(let i=0;i<N;i++){
+  const v=$(`video${i}`);v.volume=.82;v.muted=!shouldHear(i);
+ }
+}
+async function startExisting(exclude=-1){
+ const list=[];
+ for(let i=0;i<N;i++)if(shouldHear(i,exclude)){
+   const v=$(`video${i}`);v.currentTime=0;v.loop=true;v.muted=false;list.push(v.play().catch(()=>null));
+ }
+ await Promise.all(list);
+}
+function stopPlayback(){
+ for(let i=0;i<N;i++){const v=$(`video${i}`);v.pause();try{v.currentTime=0}catch{};$(`play${i}`).classList.remove("playing")}
+}
+function audioClick(accent=false){
+ if(!state.metroOn)return;
+ try{
+  const ac=state.audio||(state.audio=new (window.AudioContext||window.webkitAudioContext)());
+  const o=ac.createOscillator(),g=ac.createGain();
+  o.frequency.value=accent?1350:850;
+  const vol=Math.max(.001,state.metroVolume*(accent?.7:.42));
+  g.gain.setValueAtTime(.0001,ac.currentTime);
+  g.gain.exponentialRampToValueAtTime(vol,ac.currentTime+.005);
+  g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+.07);
+  o.connect(g).connect(ac.destination);o.start();o.stop(ac.currentTime+.075);
+  $("metroFlash").classList.add("on");setTimeout(()=>$("metroFlash").classList.remove("on"),80);
+ }catch{}
+}
+async function oneBarCountIn(){
+ for(let b=0;b<beatsPerBar();b++){
+  $("clock").textContent=`${b+1}`;
+  audioClick(b===0);
+  await sleep(beatMs());
+ }
+}
+async function waitOneBarOverLoop(){
+ const ms=beatMs()*beatsPerBar(),start=performance.now();
+ state.armed=true;
+ const tick=setInterval(()=>{
+   const e=performance.now()-start;
+   const beat=Math.min(beatsPerBar(),Math.floor(e/beatMs())+1);
+   $("clock").textContent=`${beat}`;
+ },35);
+ await sleep(ms);clearInterval(tick);state.armed=false;
+}
+async function record(i){
+ if(state.recorder)return;
+ selectTrack(i);
+ try{
+  const stream=await media();
+  stopPlayback();
+  const preview=$(`video${i}`);preview.srcObject=stream;preview.muted=true;await preview.play();
+  $(`rec${i}`).classList.add("armed");
+  if(!hasAny()){
+    await oneBarCountIn();
+  } else {
+    await startExisting(i);
+    await waitOneBarOverLoop();
+  }
+  $(`rec${i}`).classList.remove("armed");$(`rec${i}`).classList.add("recording");
+  const chunks=[];let rec;
+  try{rec=new MediaRecorder(stream,{mimeType:mime()||undefined,videoBitsPerSecond:3500000,audioBitsPerSecond:128000})}
+  catch{rec=new MediaRecorder(stream)}
+  state.recorder=rec;
+  rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
+  rec.onstop=async()=>{
+    clearInterval(state.timer);state.timer=null;
+    const blob=new Blob(chunks,{type:rec.mimeType||"video/webm"});
+    if(state.recordings[i]?.url)URL.revokeObjectURL(state.recordings[i].url);
+    const url=URL.createObjectURL(blob);
+    state.recordings[i]={blob,url,bpm:+$("bpm").value,meter:+$("meter").value};
+    preview.pause();preview.srcObject=null;preview.src=url;preview.loop=true;preview.muted=false;
+    $(`empty${i}`).style.display="none";$(`clip${i}`).classList.add("show");
+    $(`rec${i}`).classList.remove("recording");
+    state.recorder=null;$("clock").textContent="BEREIT";$("status").textContent=`Spur ${i+1} aufgenommen`;
+    await saveTrack(i);toast(`Spur ${i+1} gespeichert`);
+    playAll();
+  };
+  rec.start(200);
+  const started=performance.now(),dur=loopDuration();let last=-1;
+  $("status").textContent=`Spur ${i+1} nimmt auf`;
+  state.timer=setInterval(()=>{
+   const e=performance.now()-started,beatIndex=Math.floor(e/beatMs());
+   const bar=Math.floor(beatIndex/beatsPerBar())+1,beat=beatIndex%beatsPerBar()+1;
+   $("clock").textContent=`REC ${Math.min(bar,BARS)}.${beat}`;
+   document.querySelectorAll(".playhead").forEach(p=>p.style.left=Math.min(100,e/dur*100)+"%");
+   if(beatIndex!==last){last=beatIndex;audioClick(beat===1)}
+   if(e>=dur&&rec.state!=="inactive")rec.stop();
+  },25);
+ }catch(err){
+  console.error(err);state.recorder=null;
+  document.querySelectorAll(".rec").forEach(x=>x.classList.remove("armed","recording"));
+  $("clock").textContent="BEREIT";toast("Kamera/Mikrofon bitte erlauben");
+ }
+}
+async function playOne(i){
+ if(!state.recordings[i])return toast(`Spur ${i+1} ist leer`);
+ const v=$(`video${i}`);
+ if(v.paused){v.currentTime=0;v.loop=true;v.muted=state.muted[i];await v.play();$(`play${i}`).classList.add("playing")}
+ else{v.pause();v.currentTime=0;$(`play${i}`).classList.remove("playing")}
+}
+async function playAll(){
+ stopPlayback();
+ const active=[];
+ for(let i=0;i<N;i++)if(shouldHear(i)){const v=$(`video${i}`);v.currentTime=0;v.loop=true;v.muted=false;active.push(v.play().catch(()=>null));$(`play${i}`).classList.add("playing")}
+ if(!active.length)return toast("Keine hörbare Spur");
+ await Promise.all(active);
+ const start=performance.now(),dur=loopDuration();
+ clearInterval(state.timer);
+ state.timer=setInterval(()=>{
+  const e=(performance.now()-start)%dur,bi=Math.floor(e/beatMs()),bar=Math.floor(bi/beatsPerBar())+1,beat=bi%beatsPerBar()+1;
+  document.querySelectorAll(".playhead").forEach(p=>p.style.left=e/dur*100+"%");
+  $("clock").textContent=`${bar}.${beat}`;
+ },30);
+}
+function stopAll(){
+ if(state.recorder&&state.recorder.state!=="inactive")state.recorder.stop();
+ clearInterval(state.timer);state.timer=null;stopPlayback();
+ document.querySelectorAll(".playhead").forEach(p=>p.style.left="0");
+ $("clock").textContent="BEREIT";
+}
+function toggleMute(i){state.muted[i]=!state.muted[i];$(`mute${i}`).classList.toggle("on",state.muted[i]);setPlaybackLevels()}
+function toggleSolo(i){state.solo[i]=!state.solo[i];$(`solo${i}`).classList.toggle("on",state.solo[i]);setPlaybackLevels()}
+function deleteTrack(i){
+ if(state.recordings[i]?.url)URL.revokeObjectURL(state.recordings[i].url);
+ state.recordings[i]=null;
+ const v=$(`video${i}`);v.pause();v.removeAttribute("src");v.srcObject=null;v.load();
+ $(`empty${i}`).style.display="grid";$(`clip${i}`).classList.remove("show");
+ deleteDb(i);toast(`Spur ${i+1} gelöscht`);
+}
+function syncUi(){
+ $("tempoLabel").textContent=`${$("meter").value}/${$("meter").value==="6"?"8":"4"} · ${$("bpm").value} BPM`;
+ $("metroValue").textContent=`${$("bpm").value} BPM · ${Math.round(state.metroVolume*100)}%`;
+ $("metro").classList.toggle("off",!state.metroOn);
+}
+$("bpm").oninput=syncUi;$("meter").onchange=syncUi;
+$("loopAll").onclick=playAll;$("stopAll").onclick=stopAll;
+$("saveAll").onclick=async()=>{for(let i=0;i<N;i++)if(state.recordings[i])await saveTrack(i);toast("Projekt lokal gespeichert")};
+$("settings").onclick=()=>toast("Weitere Einstellungen folgen");
+
+let gesture={active:false,startY:0,startVol:0,moved:false};
+$("metro").addEventListener("pointerdown",e=>{
+ gesture={active:true,startY:e.clientY,startVol:state.metroVolume,moved:false};
+ $("metro").setPointerCapture(e.pointerId);
+});
+$("metro").addEventListener("pointermove",e=>{
+ if(!gesture.active)return;
+ const dy=gesture.startY-e.clientY;
+ if(Math.abs(dy)>5)gesture.moved=true;
+ state.metroVolume=Math.max(0,Math.min(1,gesture.startVol+dy/160));
+ syncUi();
+});
+$("metro").addEventListener("pointerup",e=>{
+ if(!gesture.active)return;
+ if(!gesture.moved)state.metroOn=!state.metroOn;
+ gesture.active=false;syncUi();
+});
+$("metro").addEventListener("pointercancel",()=>gesture.active=false);
+
+function openDb(){return new Promise((res,rej)=>{const q=indexedDB.open("reelloop-v04",1);q.onupgradeneeded=()=>q.result.createObjectStore("tracks");q.onsuccess=()=>{state.db=q.result;res(q.result)};q.onerror=()=>rej(q.error)})}
+async function saveTrack(i){const db=state.db||await openDb(),r=state.recordings[i];return new Promise((res,rej)=>{const tx=db.transaction("tracks","readwrite");tx.objectStore("tracks").put({blob:r.blob,bpm:r.bpm,meter:r.meter},i);tx.oncomplete=res;tx.onerror=()=>rej(tx.error)})}
+async function deleteDb(i){const db=state.db||await openDb();db.transaction("tracks","readwrite").objectStore("tracks").delete(i)}
+async function restore(){
+ const db=state.db||await openDb();
+ for(let i=0;i<N;i++){
+  const r=await new Promise(res=>{const q=db.transaction("tracks").objectStore("tracks").get(i);q.onsuccess=()=>res(q.result);q.onerror=()=>res(null)});
+  if(r?.blob){
+   const url=URL.createObjectURL(r.blob);state.recordings[i]={...r,url};
+   const v=$(`video${i}`);v.src=url;v.loop=true;
+   $(`empty${i}`).style.display="none";$(`clip${i}`).classList.add("show");
+  }
+ }
+ setPlaybackLevels();
+}
+function toast(text){const t=$("toast");t.textContent=text;t.style.display="block";clearTimeout(t._x);t._x=setTimeout(()=>t.style.display="none",1500)}
+window.addEventListener("load",async()=>{build();await restore().catch(()=>{});if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js").catch(()=>{})});
+})();
+</script>
+</body>
+</html>
