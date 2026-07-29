@@ -1,16 +1,15 @@
-# ReelLoop Studio 4.0 Alpha
+# ReelLoop Studio 4.1 Alpha
 
-Erste modularisierte Alpha-Version.
+Erste funktionale Ausbauversion der mobilen Video-Loopstation.
 
-## Dateien
-- `index.html`
-- `css/app.css`
-- `js/app.js`
-- `js/state.js`
-- `js/camera.js`
-- `js/metronome.js`
-- `js/storage.js`
-- `manifest.webmanifest`
-- `sw.js`
+## Neu in 4.1
+- frei wählbare Spuranzahl von 1 bis 6
+- Vorschau und Timeline passen sich automatisch an
+- ein Takt Einzähler vor jeder Aufnahme
+- Aufnahme endet automatisch nach der gewählten Loop-Länge
+- Projekt-Einstellungen werden lokal gespeichert
+- Mute/Solo-Darstellung verbessert
+- Android-Aufnahme robuster konfiguriert
 
-Statische Website: kein Build-Befehl nötig. Netlify Publish Directory: `.`
+## Test
+Die Dateien direkt in den Hauptordner des GitHub-Repositories laden und committen. Netlify veröffentlicht anschließend automatisch.

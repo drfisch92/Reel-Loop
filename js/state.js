@@ -1,5 +1,11 @@
-export const state={tracks:Array.from({length:6},(_,i)=>({name:`Spur ${i+1}`,blob:null,url:null,mute:false,solo:false})),selected:0,layout:'raster',stream:null,recorder:null,chunks:[],recording:false,playing:false,metro:false,start:0,timer:null,audio:null};
+export const MAX_TRACKS=6;
+export const state={
+  tracks:Array.from({length:MAX_TRACKS},(_,i)=>({name:`Spur ${i+1}`,blob:null,url:null,mute:false,solo:false})),
+  trackCount:6,selected:0,layout:'raster',stream:null,recorder:null,chunks:[],recording:false,
+  pendingRecord:false,playing:false,metro:false,start:0,timer:null,audio:null,animationId:null
+};
 export const $=id=>document.getElementById(id);
+export const activeTracks=()=>state.tracks.slice(0,state.trackCount);
 export const beat=()=>60/Math.max(30,Number($('bpm').value)||90);
 export const beats=()=>Number($('meter').value.split('/')[0])||4;
 export const loopLength=()=>beat()*beats()*(Number($('bars').value)||4);
