@@ -1,15 +1,10 @@
-# ReelLoop Studio 4.3 Alpha
+# ReelLoop Studio 4.4 Alpha
 
-## Neu
+## Änderungen
 
-- Tonwiedergabe der aufgenommenen Videospuren aktiviert
-- Mute und Solo steuern nun den tatsächlichen Ton, ohne das Videobild anzuhalten
-- Lautstärke jeder Spur direkt im Videofenster per Wischgeste einstellbar
-- Nach oben wischen: lauter
-- Nach unten wischen: leiser
-- Lautstärkeanzeige in Prozent
-- Lautstärken werden lokal gespeichert
-
-## Testhinweis
-
-Auf **PLAY** tippen. Beim ersten Start kann Android/Chrome eine Benutzerinteraktion benötigen, bevor Ton abgespielt wird. Das Antippen von PLAY erfüllt diese Vorgabe.
+- Audioaufnahme ohne Echo-Unterdrückung, Rauschunterdrückung und automatische Pegelregelung, damit Musik nicht mehr abgehackt wird.
+- MediaRecorder zeichnet nun als durchgehenden Datenstrom auf statt in 100-ms-Fragmenten.
+- Das Metronom läuft während der gesamten Aufnahme weiter.
+- Das Metronom wird ausschließlich über den METRO-Button ein- und ausgeschaltet.
+- Weniger aggressive Video-Nachsynchronisation, um hörbare Audio-Sprünge zu vermeiden.
+- Lautstärke pro Spur weiterhin per Wischgeste nach oben/unten.

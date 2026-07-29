@@ -29,7 +29,7 @@ export function stopMetronome(){clearInterval(state.timer);state.timer=null}
 
 export async function countIn(onTick){
   const a=await unlockAudio(),step=beat(),total=beats(),start=a.currentTime+.12;
-  for(let n=0;n<total;n++)scheduleClick(start+n*step,n===0,true);
+  for(let n=0;n<total;n++)scheduleClick(start+n*step,n===0,false);
   const began=performance.now();
   for(let n=0;n<total;n++){
     onTick?.(total-n);

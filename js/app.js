@@ -51,7 +51,9 @@ async function record(){
  stop(true);state.pendingRecord=true;$('record').classList.add('queued');status(`EINZÄHLER · SPUR ${state.selected+1}`,'queued');
  try{
   const stream=await ensureMedia();await unlockAudio();
-  await countIn(n=>{const el=$('countIn');el.hidden=!n;if(n)el.textContent=n});
+  stopMetronome();
+  const recordStartAudio=await countIn(n=>{const el=$('countIn');el.hidden=!n;if(n)el.textContent=n});
+  if(state.metro)startMetronome(recordStartAudio);
   const targetMs=Math.round(loopLength()*1000),started=performance.now();
   state.chunks=[];state.recorder=mediaRecorderFor(stream);
   state.recorder.ondataavailable=e=>e.data.size&&state.chunks.push(e.data);
@@ -64,7 +66,7 @@ async function record(){
    $('record').classList.remove('recording','queued');renderAll(false);status(`BEREIT · ${t.name}`);toast(`${t.name} gespeichert`)
   };
   state.pendingRecord=false;$('record').classList.remove('queued');state.recording=true;$('record').classList.add('recording');
-  status(`AUFNAHME · SPUR ${state.selected+1}`,'recording');state.recorder.start(100);
+  status(`AUFNAHME · SPUR ${state.selected+1}`,'recording');state.recorder.start();
   state.recordStopTimer=setTimeout(()=>stopRecording(false),Math.max(0,targetMs-(performance.now()-started)))
  }catch(e){
   console.error(e);state.pendingRecord=false;state.recording=false;$('record').classList.remove('queued','recording');$('countIn').hidden=true;
@@ -76,7 +78,7 @@ function stopRecording(manual){if(state.recorder?.state==='recording'){clearTime
 function syncVideo(v,i,hard=false){
  if(!state.playing||!state.tracks[i].url)return;
  const desired=((performance.now()-state.start)/1000)%loopLength();
- if(hard||Math.abs((v.currentTime||0)-desired)>.12){try{v.currentTime=desired}catch{}}
+ if(hard||Math.abs((v.currentTime||0)-desired)>.40){try{v.currentTime=desired}catch{}}
  v.muted=!audible(i);v.volume=Math.max(0,Math.min(1,state.tracks[i].volume??1));if(v.paused)v.play().catch(()=>{})
 }
 async function play(){
@@ -84,10 +86,10 @@ async function play(){
  await unlockAudio();
  stop(false);state.playing=true;state.start=performance.now()+120;status('WIEDERGABE','playing');
  document.querySelectorAll('.cell video').forEach((v,i)=>{if(state.tracks[i].url){try{v.currentTime=0}catch{};v.pause()}});
- startMetronome();state.playSyncTimer=setInterval(()=>document.querySelectorAll('.cell video').forEach((v,i)=>syncVideo(v,i)),250);animate()
+ if(state.metro)startMetronome();state.playSyncTimer=setInterval(()=>document.querySelectorAll('.cell video').forEach((v,i)=>syncVideo(v,i)),1000);animate()
 }
 function stop(reset=true){
- state.playing=false;stopMetronome();clearInterval(state.playSyncTimer);cancelAnimationFrame(state.animationId);
+ state.playing=false;clearInterval(state.playSyncTimer);cancelAnimationFrame(state.animationId);
  document.querySelectorAll('.cell video').forEach(v=>{if(v.src){v.pause();if(reset)try{v.currentTime=0}catch{}}});
  if(reset){$('counter').textContent='1.1';$('playhead').style.left='var(--side)';status(`BEREIT · SPUR ${state.selected+1}`)}
 }
@@ -104,7 +106,7 @@ $('trackCount').onchange=e=>setTrackCount(Number(e.target.value));
 ['bpm','meter','bars'].forEach(id=>$(id).onchange=()=>{if(state.playing)stop(true);renderTracks();persistSettings()});
 $('permission').onclick=()=>ensureMedia().then(()=>{renderViewer(true);status(`BEREIT · SPUR ${state.selected+1}`)}).catch(()=>toast('Berechtigung verweigert'));
 $('record').onclick=record;$('play').onclick=play;$('stop').onclick=()=>{if(state.recording)stopRecording(true);else stop(true)};
-$('metro').onclick=async()=>{state.metro=!state.metro;$('metro').classList.toggle('active',state.metro);if(state.metro)await unlockAudio();persistSettings();toast(state.metro?'Metronom an':'Metronom aus')};
+$('metro').onclick=async()=>{state.metro=!state.metro;$('metro').classList.toggle('active',state.metro);if(state.metro){await unlockAudio();startMetronome()}else stopMetronome();persistSettings();toast(state.metro?'Metronom an':'Metronom aus')};
 
 window.addEventListener('load',async()=>{
  const settings=await loadSettings().catch(()=>null);if(settings){state.trackCount=Number(settings.trackCount)||6;state.layout=settings.layout||'raster';$('trackCount').value=state.trackCount;$('bpm').value=settings.bpm||90;$('meter').value=settings.meter||'4/4';$('bars').value=settings.bars||4;state.metro=!!settings.metro;if(Array.isArray(settings.volumes))settings.volumes.forEach((v,i)=>{if(state.tracks[i])state.tracks[i].volume=Math.max(0,Math.min(1,Number(v)||0))});$('metro').classList.toggle('active',state.metro);document.querySelectorAll('.layoutbar button').forEach(x=>x.classList.toggle('on',x.dataset.layout===state.layout))}
