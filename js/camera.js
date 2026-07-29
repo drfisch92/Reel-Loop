@@ -1,0 +1,3 @@
+import{state,$}from'./state.js';
+export async function ensureMedia(){if(state.stream?.getTracks().every(t=>t.readyState==='live'))return state.stream;state.stream?.getTracks().forEach(t=>t.stop());state.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1280},height:{ideal:720}},audio:{echoCancellation:true,noiseSuppression:false,autoGainControl:true}});$('permission').textContent='Kamera + Mikro aktiv';return state.stream}
+export async function attachPreview(video){const stream=await ensureMedia();video.srcObject=stream;video.muted=true;video.playsInline=true;await video.play()}

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#090b10">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="css/app.css">
+<title>ReelLoop Studio 4.0 Alpha</title>
+</head>
+<body>
+<main class="app">
+  <header class="topbar">
+    <button class="iconBtn" aria-label="Schließen">×</button>
+    <div class="title">ReelLoop <span>4.0 α</span></div>
+    <div class="topRight"><b>HD</b><button class="nextBtn">Weiter ›</button></div>
+  </header>
+
+  <nav class="layoutbar" aria-label="Vorschau-Layout">
+    <button data-layout="solo">Solo</button><button data-layout="split">Split</button><button class="on" data-layout="raster">Raster</button><button data-layout="pip">PiP</button>
+  </nav>
+
+  <section class="viewerArea">
+    <div id="viewer" class="viewer raster"></div>
+    <button id="permission" class="permission">Kamera erlauben</button>
+  </section>
+
+  <section class="transport">
+    <button id="play">▶ PLAY</button><button id="stop">■ STOP</button><button id="record" class="record">● REC</button><button id="metro">♪ METRO</button>
+  </section>
+
+  <section class="settings">
+    <div class="counter" id="counter">1.1</div>
+    <label>TEMPO<input id="bpm" type="number" min="30" max="240" value="90"></label>
+    <label>TAKTART<select id="meter"><option>4/4</option><option>3/4</option><option>6/8</option></select></label>
+    <label>TAKTE<select id="bars"><option>1</option><option selected>4</option><option>8</option><option>16</option></select></label>
+  </section>
+
+  <section class="timeline" id="timeline">
+    <div id="tracks" class="tracks"></div>
+    <div id="playhead" class="playhead"></div>
+  </section>
+</main>
+<div id="toast" class="toast"></div>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
