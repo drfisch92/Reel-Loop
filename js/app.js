@@ -25,7 +25,7 @@ function renderTracks(){
  const root=$('tracks');root.innerHTML='';root.style.setProperty('--track-count',state.trackCount);
  activeTracks().forEach((t,i)=>{
   const r=document.createElement('div');r.className=`track ${i===state.selected?'selected':''}`;
-  r.innerHTML=`<div class="trackSide"><div class="trackName">${t.name}</div><button class="m ${t.mute?'on':''}">M</button><button class="s ${t.solo?'on':''}">S</button><button class="d">⌫</button></div><div class="lane"><div class="clip ${t.url?'show':''}">${t.url?`<video src="${t.url}" muted playsinline></video>`:''}<span>${t.url?`${t.name} · ${loopLength().toFixed(1)}s`:'Leer'}</span></div></div>`;
+  r.innerHTML=`<div class="trackSide"><div class="trackName">${t.name}</div><button class="m ${t.mute?'on':''}">M</button><button class="s ${t.solo?'on':''}">S</button><button class="d">⌫</button></div><div class="lane"><div class="clip ${t.url?'show':''}"><span>${t.url?`${t.name} · ${loopLength().toFixed(1)}s`:'Leer'}</span></div></div>`;
   r.onclick=()=>{state.selected=i;renderAll(true);status(`BEREIT · SPUR ${i+1}`)};
   r.querySelector('.m').onclick=e=>{e.stopPropagation();t.mute=!t.mute;applyAudibility();renderTracks()};
   r.querySelector('.s').onclick=e=>{e.stopPropagation();t.solo=!t.solo;applyAudibility();renderTracks()};
@@ -45,35 +45,60 @@ function mediaRecorderFor(stream){
  return new MediaRecorder(stream,mime?{mimeType:mime,videoBitsPerSecond:5_000_000,audioBitsPerSecond:160_000}:undefined)
 }
 
+async function waitForVideos(videos){
+ await Promise.all(videos.map(v=>new Promise(resolve=>{
+  if(v.readyState>=2)return resolve();
+  const done=()=>{v.removeEventListener('canplay',done);resolve()};
+  v.addEventListener('canplay',done,{once:true});setTimeout(done,1200)
+ })))
+}
+async function waitForAudioTime(audio,time){
+ const ms=Math.max(0,(time-audio.currentTime)*1000);
+ if(ms>1)await new Promise(resolve=>setTimeout(resolve,ms))
+}
+
 async function record(){
  if(state.recording||state.pendingRecord)return stopRecording(true);
  if(!window.MediaRecorder)return toast('Dieser Browser unterstützt keine Aufnahme');
  stop(true);state.pendingRecord=true;$('record').classList.add('queued');status(`EINZÄHLER · SPUR ${state.selected+1}`,'queued');
+ let recorder=null;
  try{
-  const stream=await ensureMedia();await unlockAudio();
+  const trackIndex=state.selected,targetMs=Math.round(loopLength()*1000);
+  const stream=await ensureMedia(),audio=await unlockAudio();
+  const backingVideos=[...document.querySelectorAll('.cell video')].filter((v,i)=>i!==trackIndex&&state.tracks[i]?.url);
+  backingVideos.forEach(v=>{v.pause();v.playbackRate=1;try{v.currentTime=0}catch{}});
+  await waitForVideos(backingVideos);
+  const chunks=[];recorder=mediaRecorderFor(stream);state.recorder=recorder;state.chunks=chunks;
+  recorder.ondataavailable=e=>e.data.size&&chunks.push(e.data);
+  recorder.onerror=e=>{console.error(e);toast('Aufnahmefehler')};
+  recorder.onstop=async()=>{
+   clearTimeout(state.recordStopTimer);
+   const blob=new Blob(chunks,{type:recorder.mimeType||'video/webm'}),t=state.tracks[trackIndex];
+   if(t.url)URL.revokeObjectURL(t.url);t.blob=blob;t.url=URL.createObjectURL(blob);t.duration=targetMs/1000;
+   try{await saveTrack(trackIndex,blob)}catch(e){console.error(e);toast('Speicher voll – alte Spur löschen')}
+   backingVideos.forEach(v=>v.pause());
+   if(state.recorder===recorder)state.recorder=null;
+   state.recording=false;state.pendingRecord=false;
+   $('record').classList.remove('recording','queued');renderAll(false);status(`BEREIT · ${t.name}`);toast(`${t.name} gespeichert`)
+  };
   stopMetronome();
   const recordStartAudio=await countIn(n=>{const el=$('countIn');el.hidden=!n;if(n)el.textContent=n});
   if(state.metro)startMetronome(recordStartAudio);
-  const targetMs=Math.round(loopLength()*1000),started=performance.now();
-  state.chunks=[];state.recorder=mediaRecorderFor(stream);
-  state.recorder.ondataavailable=e=>e.data.size&&state.chunks.push(e.data);
-  state.recorder.onerror=e=>{console.error(e);toast('Aufnahmefehler')};
-  state.recorder.onstop=async()=>{
-   clearTimeout(state.recordStopTimer);
-   const blob=new Blob(state.chunks,{type:state.recorder.mimeType||'video/webm'}),t=selectedTrack();
-   if(t.url)URL.revokeObjectURL(t.url);t.blob=blob;t.url=URL.createObjectURL(blob);t.duration=targetMs/1000;
-   await saveTrack(state.selected,blob);state.recording=false;state.pendingRecord=false;
-   $('record').classList.remove('recording','queued');renderAll(false);status(`BEREIT · ${t.name}`);toast(`${t.name} gespeichert`)
-  };
+  await waitForAudioTime(audio,recordStartAudio);
+  backingVideos.forEach(v=>v.play().catch(()=>{}));
   state.pendingRecord=false;$('record').classList.remove('queued');state.recording=true;$('record').classList.add('recording');
-  status(`AUFNAHME · SPUR ${state.selected+1}`,'recording');state.recorder.start();
-  state.recordStopTimer=setTimeout(()=>stopRecording(false),Math.max(0,targetMs-(performance.now()-started)))
+  status(`AUFNAHME · SPUR ${trackIndex+1}`,'recording');recorder.start();
+  state.recordStopTimer=setTimeout(()=>stopRecording(false),targetMs)
  }catch(e){
-  console.error(e);state.pendingRecord=false;state.recording=false;$('record').classList.remove('queued','recording');$('countIn').hidden=true;
+  console.error(e);if(recorder?.state==='recording')recorder.stop();
+  state.pendingRecord=false;state.recording=false;$('record').classList.remove('queued','recording');$('countIn').hidden=true;
   status(`BEREIT · SPUR ${state.selected+1}`);toast(e?.name==='NotAllowedError'?'Kamera/Mikrofon nicht erlaubt':'Kamera/Mikrofon nicht verfügbar')
  }
 }
-function stopRecording(manual){if(state.recorder?.state==='recording'){clearTimeout(state.recordStopTimer);state.recorder.stop();if(manual)toast('Aufnahme beendet')}}
+function stopRecording(manual){
+ const recorder=state.recorder;
+ if(recorder?.state==='recording'){clearTimeout(state.recordStopTimer);recorder.stop();if(manual)toast('Aufnahme beendet')}
+}
 
 function syncVideo(v,i,hard=false){
  if(!state.playing||!state.tracks[i].url)return;
@@ -85,20 +110,17 @@ function syncVideo(v,i,hard=false){
 }
 async function play(){
  if(!activeTracks().some(t=>t.url))return toast('Noch keine Spur aufgenommen');
- await unlockAudio();
+ const audio=await unlockAudio();
  stop(false);status('WIEDERGABE','playing');
  const videos=[...document.querySelectorAll('.cell video')].filter((v,i)=>state.tracks[i]?.url);
  videos.forEach(v=>{v.pause();v.playbackRate=1;try{v.currentTime=0}catch{}});
- await Promise.all(videos.map(v=>new Promise(resolve=>{
-   if(v.readyState>=2)return resolve();
-   const done=()=>{v.removeEventListener('canplay',done);resolve()};
-   v.addEventListener('canplay',done,{once:true});setTimeout(done,900)
- })));
- state.playing=true;
+ await waitForVideos(videos);
+ const startAudio=audio.currentTime+.12;
+ if(state.metro)startMetronome(startAudio);
+ await waitForAudioTime(audio,startAudio);
+ state.start=performance.now();state.playing=true;
  await Promise.all(videos.map(v=>v.play().catch(()=>{})));
- state.start=performance.now();
  videos.forEach((v,i)=>syncVideo(v,i,true));
- if(state.metro)startMetronome();
  state.playSyncTimer=setInterval(()=>document.querySelectorAll('.cell video').forEach((v,i)=>syncVideo(v,i)),350);
  animate()
 }
