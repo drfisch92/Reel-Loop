@@ -67,6 +67,7 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
+import com.google.firebase.appdistribution.FirebaseAppDistribution
 import kotlinx.coroutines.*
 import java.io.File
 import kotlin.math.max
@@ -109,6 +110,11 @@ class MainActivity : ComponentActivity() {
         volumeControlStream = AudioManager.STREAM_MUSIC
         setContent { ReelLoopApp() }
     }
+
+    override fun onResume() {
+        super.onResume()
+        FirebaseAppDistribution.getInstance().updateIfNewReleaseAvailable()
+    }
 }
 
 @Composable
@@ -132,9 +138,14 @@ private fun ReelLoopApp() {
 
     LaunchedEffect(Unit) {
         if (!permissionsGranted) {
-            permissionLauncher.launch(
-                arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
+            val requested = mutableListOf(
+                Manifest.permission.CAMERA,
+                Manifest.permission.RECORD_AUDIO
             )
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                requested += Manifest.permission.POST_NOTIFICATIONS
+            }
+            permissionLauncher.launch(requested.toTypedArray())
         }
     }
 
