@@ -20,6 +20,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.MirrorMode.MIRROR_MODE_ON_FRONT_ONLY
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.FileOutputOptions
@@ -83,6 +84,7 @@ private val Green = Color(0xFF64A33F)
 private val Orange = Color(0xFFE98216)
 private val Yellow = Color(0xFFF1C51B)
 private val TrackColors = listOf(Purple, Blue, Green, Orange, Yellow, Purple)
+private const val CLICK_OUTPUT_COMPENSATION_MS = 95L
 
 enum class ScreenMode { SOLO, GRID, PIP, SPLIT }
 
@@ -250,14 +252,15 @@ private fun ReelLoopApp() {
         if (!metronomeOn) return
 
         val beatDurationMs = 60_000.0 / bpm.toDouble()
-        val outputCompensationMs = 95.0
+        val outputCompensationMs = CLICK_OUTPUT_COMPENSATION_MS.toDouble()
 
         metronomeJob = scope.launch {
             if (referencePlayer == null) {
                 var beatIndex = 0L
                 while (isActive) {
                     val targetNs = originNs +
-                        ((beatIndex * 60_000_000_000L) / bpm.toLong())
+                        ((beatIndex * 60_000_000_000L) / bpm.toLong()) -
+                        CLICK_OUTPUT_COMPENSATION_MS * 1_000_000L
                     masterClock.awaitUntil(targetNs)
                     val beatInBar = (beatIndex % beatsPerBar.toLong()).toInt()
                     currentBeat = beatInBar + 1
@@ -283,7 +286,7 @@ private fun ReelLoopApp() {
 
                     while (nextBeatInLoop < beatsInLoop) {
                         val beatPositionMs =
-                            nextBeatInLoop.toDouble() * beatDurationMs +
+                            nextBeatInLoop.toDouble() * beatDurationMs -
                                 outputCompensationMs
                         if (position.toDouble() + 2.0 < beatPositionMs) break
 
@@ -399,7 +402,8 @@ private fun ReelLoopApp() {
                     isRecording = false
                     val actualStartNs = cameraStartedAt.getCompletedOrNull()
                         ?: cameraStartRequestNs
-                    val prerollMs = ((recordingStartNs - actualStartNs) / 1_000_000L)
+                    val prerollMs = ((recordingStartNs - actualStartNs) / 1_000_000L +
+                        CLICK_OUTPUT_COMPENSATION_MS)
                         .coerceAtLeast(0L)
 
                     tracks[targetTrack] = tracks[targetTrack].copy(
@@ -1062,7 +1066,9 @@ class CameraRecordingController(private val context: Context) {
             val recorder = Recorder.Builder()
                 .setQualitySelector(QualitySelector.from(Quality.HD))
                 .build()
-            capture = VideoCapture.withOutput(recorder)
+            capture = VideoCapture.Builder(recorder)
+                .setMirrorMode(MIRROR_MODE_ON_FRONT_ONLY)
+                .build()
             try {
                 provider?.unbindAll()
                 provider?.bindToLifecycle(
@@ -1203,3 +1209,4 @@ private fun Modifier.noRippleClick(onClick: () -> Unit): Modifier =
         indication = null,
         onClick = onClick
     )
+
