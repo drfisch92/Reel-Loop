@@ -1,10 +1,25 @@
-# ReelLoop Studio 4.5 Alpha
+# ReelLoop Prototype 0.1.9 – Stable Thread Fix
 
-## Änderungen
+Das Layout wurde nicht verändert.
 
-- Audioaufnahme ohne Echo-Unterdrückung, Rauschunterdrückung und automatische Pegelregelung, damit Musik nicht mehr abgehackt wird.
-- MediaRecorder zeichnet nun als durchgehenden Datenstrom auf statt in 100-ms-Fragmenten.
-- Das Metronom läuft während der gesamten Aufnahme weiter.
-- Das Metronom wird ausschließlich über den METRO-Button ein- und ausgeschaltet.
-- Weniger aggressive Video-Nachsynchronisation, um hörbare Audio-Sprünge zu vermeiden.
-- Lautstärke pro Spur weiterhin per Wischgeste nach oben/unten.
+Behoben:
+- Das Wiedergabe-Metronom folgt der tatsächlichen Media3-Playerposition.
+- Player-Loop und Metronom können dadurch nicht mehr pro Wiederholung auseinanderdriften.
+- Der Live-Klick wird für die Aufnahme-/Ausgabelatenz des Smartphones kompensiert.
+- Der Einzähler nutzt vorab geladene SoundPool-Klickdateien statt ToneGenerator.
+- Die präzise Uhr blockiert nicht mehr den Android-Main-Thread.
+- TAKTE, TAKTART und TAP verwenden zuverlässige Compose-Click-Flächen.
+- Der Tempo-Regler reagiert auf Tippen und horizontales Ziehen.
+- Tempo und Taktzahl sind nur bei gestopptem Transport veränderbar.
+
+Test:
+1. Alte App überschreiben oder deinstallieren.
+2. Spur 1 mit hörbarem Klick neu aufnehmen.
+3. STOP, danach PLAY.
+4. Metronom einschalten und mindestens 8–16 Loops laufen lassen.
+
+
+## 0.1.9 Stable Thread Fix
+- Removed Android 11-incompatible/busy-wait Java thread calls from MasterClock.
+- ExoPlayer state and position are now read only from the main coroutine context.
+- No layout or feature changes.
