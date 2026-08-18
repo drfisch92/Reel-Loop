@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "500143309255",
+    "project_id": "reelloop-3db2c",
+    "storage_bucket": "reelloop-3db2c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:500143309255:android:f8898db3afe8bfa9e619e2",
+        "android_client_info": {
+          "package_name": "at.reelloop.prototype"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBUSfwbKPKIoHCWQTvYcUqyeQA9OBC_Evo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
+
