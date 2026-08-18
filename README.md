@@ -34,3 +34,6 @@ Test:
 - Downloads an available APK and asks the tester to install it.
 - The self-update implementation is included only in debug/test builds.
 
+
+## 0.1.12 In-app update test
+- Test release for verifying that an installed 0.1.11 build detects Firebase updates when opened.
