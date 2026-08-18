@@ -29,3 +29,8 @@ Test:
 - Recorded clips remove the same latency offset from their preroll.
 - Front-camera recordings now match the mirrored camera preview.
 
+## 0.1.11 Firebase test updates
+- Checks Firebase App Distribution for a new test build whenever the app opens.
+- Downloads an available APK and asks the tester to install it.
+- The self-update implementation is included only in debug/test builds.
+
