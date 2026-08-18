@@ -2,6 +2,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -12,8 +13,8 @@ android {
         applicationId = "at.reelloop.prototype"
         minSdk = 26
         targetSdk = 35
-        versionCode = 10
-        versionName = "0.1.10"
+        versionCode = 11
+        versionName = "0.1.11"
     }
 
     compileOptions {
@@ -55,5 +56,8 @@ dependencies {
     implementation("androidx.media3:media3-ui:$media3")
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+
+    implementation("com.google.firebase:firebase-appdistribution-api:16.0.0-beta20")
+    debugImplementation("com.google.firebase:firebase-appdistribution:16.0.0-beta20")
 }
 
