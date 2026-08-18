@@ -13,8 +13,8 @@ android {
         applicationId = "at.reelloop.prototype"
         minSdk = 26
         targetSdk = 35
-        versionCode = 11
-        versionName = "0.1.11"
+        versionCode = 12
+        versionName = "0.1.12"
     }
 
     compileOptions {
@@ -60,4 +60,3 @@ dependencies {
     implementation("com.google.firebase:firebase-appdistribution-api:16.0.0-beta20")
     debugImplementation("com.google.firebase:firebase-appdistribution:16.0.0-beta20")
 }
-
